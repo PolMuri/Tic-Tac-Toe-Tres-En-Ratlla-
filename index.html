@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="images/TresEnRatlla.png"> 
+    <title>Tres en ratlla (Tic-Tac-Toe)</title>
+    <style>
+         body {
+            background-color: #ecffd3; 
+            font-family: "Courier New", Courier, monospace; 
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            margin: 20px auto;
+            width: 320px;
+            height: 320px;
+            background-color: #f0f0f0;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            text-align: center;
+            font-size: 36px;
+            border: 2px solid #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .cell.disabled {
+            pointer-events: none;
+        }
+        .message {
+            text-align: center;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="text-align: center;">Tres en Ratlla (Tic-Tac-Toe)</h1>
+    <div class="message" id="message">Jugador X, el teu torn!</div>
+    <div class="board" id="board">
+        <!-- Generem les caselles dinàmicament amb JavaScript -->
+    </div>
+
+    <script>
+        // Inicialització del tauler
+        function initializeBoard() {
+            let board = [];
+            for (let i = 0; i < 3; i++) {
+                board[i] = [];
+                for (let j = 0; j < 3; j++) {
+                    board[i][j] = null; // Utilitzem null per indicar que una casella està buida o bé que es pot actualitzar si un jugador la marca.
+                }
+            }
+            return board;
+        }
+
+        // Mostrem el tauler de joc  generem el tauler de 3x3 dinàmicament a partir de l'array board, 
+        // que conté les jugades dels jugadors ("X", "O", o null per a les caselles buides). També assegurem que les caselles ja ocupades no siguin clicables.
+        function displayBoard(board) {
+            // Busquem l'element "board" que és el que haurem creat al fitxer HTML per mostrar el tauler i on s'aniran afegint les cel·les.
+            const boardElement = document.getElementById("board");
+            boardElement.innerHTML = "";  // Netejar el tauler abans de mostrar-lo eliminant qualsevol contingut anterior dins de l'element boardElement.
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    // Per cada casella crearem un nou element HTML div que serà la casella del tauler, cada vegada que es passa per una posició es crea una nova casella.
+                    const cell = document.createElement("div"); 
+                    // Afegim la classe CSS "cell" a l'element per poder donar-li forma amb CSS
+                    cell.classList.add("cell");
+                    // Data-row data-col són propietats que són útils per identificar en quina fila i columna es troba la casella.
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.textContent = board[i][j] || ""; // Assignem el valor de la casella del tauler a la casella HTML. Si el valor de la matriu board[i][j] és null (casella buida), es mostra un string buit ("")
+                    cell.onclick = () => handleClick(i, j); // Quan l'usuari fa clic sobre una casella es crida la funció handleClick(i, j) passant-li les coordenades de la casella (fila i columna).
+                    // Comprovem si la casella ja està ocupada, és a dir, si el valor és !== de null. Si està ocupada afegim la classe "disabled" a la casella. 
+                    // Aquesta classe es defineix al CSS i serveix per fer que les caselles ocupades no siguin clicables evitant que els jugadors puguin fer-hi clic més d'una vegada.
+                    if (board[i][j] !== null) {
+                        cell.classList.add("disabled");  // Deshabilitar les cel·les ocupades
+                    }
+                    // Afegeix la casella (cell) a l'element HTML del tauler (boardElement) fent que la casella es mostri al navegador.
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        // Comprovem si hi ha guanyador rebent per paràmetre el taule ri el jugador
+        function checkWin(board, player) {
+            // Comprovar files i columnes per verificar si un jugador ha guanyat el joc. 
+            // Revisem si el jugador ha aconseguit tres símbols iguals en una línia, ja sigui en una fila, una columna o una diagonal.
+            for (let i = 0; i < 3; i++) {
+                if (
+                    (board[i][0] === player && board[i][1] === player && board[i][2] === player) ||  // Fila
+                    (board[0][i] === player && board[1][i] === player && board[2][i] === player)    // Columna
+                ) {
+                    return true;
+                }
+            }
+
+            // Comprovem diagonals: Aquesta comprovació revisa si el jugador ha guanyat en alguna de les dues diagonals possibles 
+            // (de l'angle superior esquerre a l'angle inferior dret i de l'angle superior dret a l'angle inferior esquerre).
+            if (
+                (board[0][0] === player && board[1][1] === player && board[2][2] === player) ||  // Diagonal principal
+                (board[0][2] === player && board[1][1] === player && board[2][0] === player)    // Diagonal secundària
+            ) {
+                return true;
+            }
+
+            return false;
+        }
+
+        // Comprovar si el tauler està ple
+        function isBoardFull(board) {
+            for (let row of board) {
+                for (let cell of row) {
+                    if (cell === null) return false;
+                }
+            }
+            return true;
+        }
+
+        // Funció per gestionar el clic de l'usuari
+        let currentPlayer = "X";
+        let board = initializeBoard();
+        let gameWon = false;
+
+        function handleClick(row, col) {
+            if (board[row][col] !== null || gameWon) return;  // Si la cel·la ja està ocupada o el joc ha acabat
+
+            // Actualitzem el tauler
+            board[row][col] = currentPlayer;
+
+            // Mostrem el tauler
+            displayBoard(board);
+
+            // Comprovem si hi ha guanyador
+            if (checkWin(board, currentPlayer)) {
+                document.getElementById("message").textContent = `El jugador ${currentPlayer} ha guanyat!🎉🎉🎉`;
+                gameWon = true;
+                return;
+            }
+
+            // Comprovar si el tauler està ple
+            if (isBoardFull(board)) {
+                document.getElementById("message").textContent = "Empat entre els dos jugadors! El tauler està ple.";
+                return;
+            }
+
+            // Canviem el torn del jugador, comprovem si el jugador actual (currentPlayer) és "X". Si és cert (currentPlayer === "X"), 
+            // s'assigna "O" a currentPlayer, indicant que és el torn del jugador "O"
+            if (currentPlayer === "X") {
+                currentPlayer = "O";
+            } else {
+                currentPlayer = "X";
+            }
+            //  Actualitzem el missatge al navegador per dir quin jugador té el torn actual utilitzant la variable currentPlayer per mostrar el nom del jugador.
+            document.getElementById("message").textContent = `Jugador ${currentPlayer}, el teu torn!`;
+        }
+
+        // Inicialitzem el tauler i el mostrem
+        displayBoard(board);
+    </script>
+    
+</body>
+</html>
